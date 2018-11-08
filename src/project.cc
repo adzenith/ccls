@@ -15,6 +15,7 @@ limitations under the License.
 
 #include "project.hh"
 
+#include "clang_tu.hh" // llvm::vfs
 #include "filesystem.hh"
 #include "log.hh"
 #include "match.hh"
@@ -345,6 +346,16 @@ LoadEntriesFromDirectory(ProjectConfig *project,
     proc.Process(entry);
     if (Seen.insert(entry.filename).second)
       result.push_back(entry);
+  }
+  {
+    // Thread hostile but work around --sysroot= when there is only one
+    // workspace folder.
+    static bool once;
+    if (result.size() && !once) {
+      once = true;
+      llvm::vfs::getRealFileSystem()->setCurrentWorkingDirectory(
+          result[0].directory);
+    }
   }
   return result;
 }
